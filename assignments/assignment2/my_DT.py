@@ -36,39 +36,43 @@ class my_DT:
 			raise Exception("Unknown criterion.")
 		return impure
 
+	def find_best_split(self, pop, X, labels):
+		# Find the best split
+		# Inputs:
+		#   pop:    indices of data in the node
+		#   X:      independent variables of training data
+		#   labels: dependent variables of training data
+		# Output: tuple(best feature to split, weighted impurity score of best split, splitting point of the feature, [indices of data in left node, indices of data in right node], [weighted impurity score of left node, weighted impurity score of right node])
+		######################
+		best_feature = None
+		for feature in X.keys():
+			cans = np.array(X[feature][pop])
+			cans_sorted = np.argsort(cans)
+			n = len(cans_sorted)
+			impures = []
+			impure = []
+			for i in range(n - 1):
+				if cans[cans_sorted[i]] == cans[cans_sorted[i + 1]]:
+					impure.append(np.inf)
+					impures.append([])
+				else:
+					impures.append([self.impurity(labels[pop[cans_sorted[:i + 1]]]) * (i + 1),
+									(n - i - 1) * self.impurity(labels[pop[cans_sorted[i + 1:]]])])
+					impure.append(np.sum(impures[-1]))
+
+			min_impure = np.min(impure)
+
+			if min_impure < np.inf and (best_feature == None or best_feature[1] > min_impure):
+				split = np.argmin(impure)
+				best_feature = (feature, min_impure, (cans[cans_sorted][split] + cans[cans_sorted][split + 1]) / 2.0,
+								[pop[cans_sorted[:split + 1]], pop[cans_sorted[split + 1:]]], impures[split])
+
+		return best_feature
+
 	def fit(self, X, y):
 		# X: pd.DataFrame, independent variables, float
 		# y: list, np.array or pd.Series, dependent variables, int or str
 		self.classes_ = list(set(list(y)))
-		# write your code below
-
-		def find_best_split(pop):
-			# Find the best split
-			# Input: indices of data in the node
-			# Output: tuple(best feature to split, weighted impurity score of best split, splitting point of the feature, [indices of data in left node, indices of data in right node], [impurity score of left node, impurity score of right node])
-			best_feature = None
-			for feature in X.keys():
-				cans = np.array(X[feature][pop])
-				cans_sorted = np.argsort(cans)
-				n = len(cans_sorted)
-				impures = []
-				impure = []
-				for i in range(n-1):
-					if cans[cans_sorted[i]]==cans[cans_sorted[i+1]]:
-						impure.append(np.inf)
-						impures.append([])
-					else:
-						impures.append([self.impurity(labels[pop[cans_sorted[:i+1]]])*(i+1),(n-i-1)*self.impurity(labels[pop[cans_sorted[i+1:]]])])
-						impure.append(np.sum(impures[-1]))
-
-				min_impure = np.min(impure)
-
-				if min_impure < np.inf and (best_feature == None or best_feature[1]>min_impure):
-					split = np.argmin(impure)
-					best_feature = (feature, min_impure, (cans[cans_sorted][split]+cans[cans_sorted][split+1])/2.0, [pop[cans_sorted[:split+1]], pop[cans_sorted[split+1:]]], impures[split])
-
-			return best_feature
-
 
 		labels = np.array(y)
 		N = len(y)
@@ -84,8 +88,8 @@ class my_DT:
 				if len(current_pop) < self.min_samples_split or current_impure == 0:
 					self.tree[node] = Counter(labels[current_pop])
 				else:
-					best_feature = find_best_split(current_pop)
-					if (current_impure - best_feature[1])>self.min_impurity_decrease*N:
+					best_feature = self.find_best_split(current_pop, X, labels)
+					if best_feature and (current_impure - best_feature[1])>self.min_impurity_decrease*N:
 						self.tree[node]=(best_feature[0], best_feature[2])
 						next_nodes.extend([node*2+1,node*2+2])
 						population[node*2+1] = best_feature[3][0]
