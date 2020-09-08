@@ -85,7 +85,7 @@ class my_DT:
 					self.tree[node] = Counter(labels[current_pop])
 				else:
 					best_feature = find_best_split(current_pop)
-					if (current_impure - best_feature[1])>self.min_impurity_decrease*N:
+					if best_feature AND (current_impure - best_feature[1])>self.min_impurity_decrease*N:
 						self.tree[node]=(best_feature[0], best_feature[2])
 						next_nodes.extend([node*2+1,node*2+2])
 						population[node*2+1] = best_feature[3][0]
