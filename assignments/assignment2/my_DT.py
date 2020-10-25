@@ -85,7 +85,7 @@ class my_DT:
 			for node in nodes:
 				current_pop = population[node]
 				current_impure = impurity[node]
-				if len(current_pop) < self.min_samples_split or current_impure == 0:
+				if len(current_pop) < self.min_samples_split or current_impure == 0 or level+1 == self.max_depth:
 					self.tree[node] = Counter(labels[current_pop])
 				else:
 					best_feature = self.find_best_split(current_pop, X, labels)
@@ -111,6 +111,7 @@ class my_DT:
 		for i in range(len(X)):
 			node = 0
 			while True:
+
 				if type(self.tree[node])==Counter:
 					label = list(self.tree[node].keys())[np.argmax(self.tree[node].values())]
 					predictions.append(label)
@@ -120,6 +121,7 @@ class my_DT:
 						node = node*2+1
 					else:
 						node = node*2+2
+
 		return predictions
 
 	def predict_proba(self, X):
